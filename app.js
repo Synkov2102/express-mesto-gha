@@ -15,12 +15,15 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
 app.use(express.json());
 app.use((req, res, next) => {
   req.user = {
-    _id: '6253dd4461d66e3ba17e2be1', // вставьте сюда _id созданного в предыдущем пункте пользователя
+    _id: '62551cb6e37995109d183a63', // вставьте сюда _id созданного в предыдущем пункте пользователя
   };
 
   next();
 });
 app.use('/', user);
 app.use('/', card);
+app.use('/', (req, res) => {
+  res.status(404).send({ message: 'Путь не найден.' });
+});
 
 app.listen(PORT);

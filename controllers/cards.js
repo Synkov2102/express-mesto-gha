@@ -6,7 +6,7 @@ module.exports.createCard = (req, res) => {
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.name === 'ValidationError') { return res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя.' }); }
+      if (err.name === 'ValidationError') { return res.status(400).send({ message: 'Переданы некорректные данные при создании карточки.' }); }
       return res.status(500).send({ message: 'Произошла ошибка' });
     });
 };
@@ -17,7 +17,10 @@ module.exports.deleteCardById = (req, res) => {
       if (!card) { return res.status(404).send({ message: 'Карточка с указанным _id не найдена' }); }
       return res.send({ data: card });
     })
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch((err) => {
+      if (err.name === 'CastError') { return res.status(400).send({ message: 'Переданы некорректные данные при удалении карточки.' }); }
+      return res.status(500).send({ message: 'Произошла ошибка' });
+    });
 };
 
 module.exports.findCards = (req, res) => {
@@ -36,7 +39,10 @@ module.exports.likeCard = (req, res) => {
       if (!card) { return res.status(404).send({ message: 'Карточка с указанным _id не найдена' }); }
       return res.send({ data: card });
     })
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch((err) => {
+      if (err.name === 'CastError') { return res.status(400).send({ message: 'Переданы некорректные данные при лайке карточки.' }); }
+      return res.status(500).send({ message: 'Произошла ошибка' });
+    });
 };
 
 module.exports.dislikeCard = (req, res) => {
@@ -49,5 +55,8 @@ module.exports.dislikeCard = (req, res) => {
       if (!card) { return res.status(404).send({ message: 'Карточка с указанным _id не найдена' }); }
       return res.send({ data: card });
     })
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch((err) => {
+      if (err.name === 'CastError') { return res.status(400).send({ message: 'Переданы некорректные данные при снятии лайке карточки.' }); }
+      return res.status(500).send({ message: 'Произошла ошибка' });
+    });
 };
