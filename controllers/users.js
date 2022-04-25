@@ -1,58 +1,102 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+let validator = require('validator');
 const User = require('../models/users');
 
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+const userErr = new Error('Неправильная почта или пароль');
+userErr.statusCode = 401;
 
-  User.create({ name, about, avatar })
+const invalidInputErr = new Error('Переданы неверные данные');
+userErr.statusCode = 400;
+
+const notFoundErr = new Error('Пользователь не найден');
+notFoundErr.statusCode = 404;
+
+module.exports.createUser = (req, res, next) => {
+  const {
+    email, password, name, about, avatar,
+  } = req.body;
+  if (!email.isEmail()) { throw invalidInputErr; }
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      email, password: hash, name, about, avatar,
+    }))
     .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') { return res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя.' }); }
-      return res.status(500).send({ message: 'Произошла ошибка' });
-    });
+    .catch((err) => next(err));
 };
 
-module.exports.findUserById = (req, res) => {
+module.exports.findUserById = (req, res, next) => {
   User.findById(req.params.id)
     .then((user) => {
-      if (!user) { return res.status(404).send({ message: 'Пользователь с указанным _id не найден' }); }
+      if (!user) { throw notFoundErr; }
       return res.send({ data: user });
     })
-    .catch((err) => {
-      if (err.name === 'CastError') { return res.status(400).send({ message: 'Переданы некорректные данные при поиске пользователя.' }); }
-      return res.status(500).send({ message: 'Произошла ошибка' });
-    });
+    .catch((err) => next(err));
 };
 
-module.exports.findUsers = (req, res) => {
+module.exports.findUsers = (req, res, next) => {
   User.find({})
     .then((user) => res.send({ data: user }))
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch((err) => next(err));
 };
 
-module.exports.patchUser = (req, res) => {
+module.exports.findCurrentUser = (req, res, next) => {
+  User.findById(req.user._id)
+    .then((user) => {
+      if (!user) { throw notFoundErr; }
+      return res.send({ data: user });
+    })
+    .catch((err) => next(err));
+};
+
+module.exports.patchUser = (req, res, next) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => {
-      if (!user) { return res.status(404).send({ message: 'Пользователь с указанным _id не найден' }); }
+      if (!user) { throw notFoundErr; }
       return res.send({ data: user });
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') { return res.status(400).send({ message: 'Переданы некорректные данные при редактировании пользователя.' }); }
-      return res.status(500).send({ message: 'Произошла ошибка' });
-    });
+    .catch((err) => next(err));
 };
 
-module.exports.patchUserAvatar = (req, res) => {
+module.exports.patchUserAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
-      if (!user) { return res.status(404).send({ message: 'Пользователь с указанным _id не найден' }); }
+      if (!user) { throw notFoundErr; }
       return res.send({ data: user });
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') { return res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя.' }); }
-      return res.status(500).send({ message: 'Произошла ошибка' });
-    });
+    .catch((err) => next(err));
+};
+
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+  if (!email.isEmail()) { throw invalidInputErr; }
+  User.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
+        return Promise.reject(userErr);
+      }
+      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            // хеши не совпали — отклоняем промис
+            return Promise.reject(userErr);
+          }
+
+          // аутентификация успешна
+          res
+            .status(200)
+            .cookie('jwt', token, {
+              // token - наш JWT токен, который мы отправляем
+              maxAge: 3600000 * 24 * 7,
+              httpOnly: true,
+            })
+            .send({ message: 'ОК' });
+        });
+    })
+    .catch((err) => next(err));
 };
