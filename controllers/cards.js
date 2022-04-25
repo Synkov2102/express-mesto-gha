@@ -18,7 +18,7 @@ module.exports.deleteCardById = (req, res, next) => {
   Card.findById(req.params.cardId)
     .then((card) => {
       if (!card) { throw notFoundErr; }
-      if (card.owner._id != req.user._id) {
+      if (card.owner._id !== req.user._id) {
         return Promise.reject(cardErr);
       }
       return card.remove();

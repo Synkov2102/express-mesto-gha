@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       validate: {
         validator(v) {
-          return /http[s]?:\/(?:\/[^\/]+){1,}(?:\/[А-Яа-яёЁ\w ]+\.[a-z]{3,5}(?![\/]|[\wА-Яа-яёЁ]))/.test(v);
+          return /http[s]?:\/(?:\/[^/]+){1,}(?:\/[А-Яа-яёЁ\w ]+\.[a-z]{3,5}(?![/]|[\wА-Яа-яёЁ]))/.test(v);
         },
 
         message: (props) => `${props.value} is not a valid phone number!`,

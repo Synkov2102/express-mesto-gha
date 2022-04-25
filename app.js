@@ -34,7 +34,6 @@ app.use('/', (req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  // если у ошибки нет статуса, выставляем 500
   next();
   if (err.statusCode) {
     return res.status(err.statusCode).send({ message: err.message });

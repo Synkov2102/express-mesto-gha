@@ -1,6 +1,5 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-let validator = require('validator');
 const User = require('../models/users');
 
 const userErr = new Error('Неправильная почта или пароль');
@@ -77,7 +76,7 @@ module.exports.login = (req, res, next) => {
   User.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        return Promise.reject(userErr);
+        Promise.reject(userErr);
       }
       const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
       bcrypt.compare(password, user.password)
@@ -88,7 +87,7 @@ module.exports.login = (req, res, next) => {
           }
 
           // аутентификация успешна
-          res
+          return res
             .status(200)
             .cookie('jwt', token, {
               // token - наш JWT токен, который мы отправляем
