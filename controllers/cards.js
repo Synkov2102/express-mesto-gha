@@ -1,7 +1,7 @@
 const Card = require('../models/cards');
 
 const cardErr = new Error('Карточка принадлежит другому пользователю');
-cardErr.statusCode = 401;
+cardErr.statusCode = 403;
 
 const notFoundErr = new Error('Карточка не найдена');
 notFoundErr.statusCode = 404;
@@ -18,7 +18,7 @@ module.exports.deleteCardById = (req, res, next) => {
   Card.findById(req.params.cardId)
     .then((card) => {
       if (!card) { throw notFoundErr; }
-      if (card.owner._id !== req.user._id) {
+      if (String(card.owner._id) !== req.user._id) {
         return Promise.reject(cardErr);
       }
       return card.remove();
