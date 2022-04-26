@@ -2,8 +2,19 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const { celebrate, Joi, errors } = require('celebrate');
+const validator = require('validator');
 
 const app = express();
+
+const URLErr = new Error('Неправильный формат ссылки');
+URLErr.statusCode = 401;
+
+const validateURL = (value) => {
+  if (!validator.isURL(value, { require_protocol: true })) {
+    throw URLErr;
+  }
+  return value;
+};
 
 const { PORT = 3000 } = process.env;
 const pageNotFound = new Error('Страница не найдена');
@@ -37,7 +48,7 @@ app.post('/signup', celebrate({
     password: Joi.string().required().min(8),
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
-    avatar: Joi.string().min(2).max(30),
+    avatar: Joi.custom(validateURL),
   }),
 }), createUser);
 app.use(auth);
@@ -51,10 +62,6 @@ app.use((err, req, res, next) => {
   next();
   if (err.statusCode) {
     return res.status(err.statusCode).send({ message: err.message });
-  } if (err.name === 'CastError') {
-    return res.status(400).send({ message: 'Переданы некорректные данные' });
-  } if (err.name === 'ValidationError') {
-    return res.status(400).send({ message: 'Переданы некорректные данные2' });
   }
   const { statusCode = 500, message } = err;
   return res

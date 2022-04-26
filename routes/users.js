@@ -1,6 +1,17 @@
 const user = require('express').Router();
 const { celebrate, Joi } = require('celebrate');
 
+const URLErr = new Error('Неправильный формат ссылки');
+URLErr.statusCode = 401;
+const validator = require('validator');
+
+const validateURL = (value) => {
+  if (!validator.isURL(value, { require_protocol: true })) {
+    throw URLErr;
+  }
+  return value;
+};
+
 const {
   findUsers,
   findUserById,
@@ -15,7 +26,7 @@ user.get('/users/me', findCurrentUser);
 
 user.get('/users/:id', celebrate({
   params: Joi.object().keys({
-    id: Joi.string().alphanum().length(24),
+    id: Joi.string().length(24).hex().required(),
   }),
 }), findUserById);
 
@@ -28,7 +39,7 @@ user.patch('/users/me', celebrate({
 
 user.patch('/users/me/avatar', celebrate({
   body: Joi.object().keys({
-    avatar: Joi.string().required(),
+    avatar: Joi.custom(validateURL).required(),
   }),
 }), patchUserAvatar);
 

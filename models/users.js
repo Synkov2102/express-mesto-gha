@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const validator = require('validator');
 
 const userSchema = new mongoose.Schema(
   {
@@ -6,11 +7,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      validate: {
+        validator: (v) => validator.isEmail(v),
+      },
     },
     password: {
       type: String,
       required: true,
-      minlength: 8,
       select: false,
     },
     name: {
@@ -31,16 +34,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+      validate: {
+        validator: (v) => validator.isURL(v),
+      },
     },
   },
   {
     versionKey: false,
   },
 );
-
-userSchema.path('avatar').validate((val) => {
-  const urlRegex = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
-  return urlRegex.test(val);
-}, 'Invalid URL.');
 
 module.exports = mongoose.model('user', userSchema);

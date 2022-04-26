@@ -3,6 +3,9 @@ const Card = require('../models/cards');
 const cardErr = new Error('Карточка принадлежит другому пользователю');
 cardErr.statusCode = 403;
 
+const incorrectDataErr = new Error('Переданы некорректные данные');
+incorrectDataErr.statusCode = 400;
+
 const notFoundErr = new Error('Карточка не найдена');
 notFoundErr.statusCode = 404;
 
@@ -11,7 +14,12 @@ module.exports.createCard = (req, res, next) => {
 
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.send({ data: card }))
-    .catch((err) => next(err));
+    .catch((err) => {
+      if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
+        throw incorrectDataErr;
+      }
+    })
+    .catch(next);
 };
 
 module.exports.deleteCardById = (req, res, next) => {
@@ -24,7 +32,12 @@ module.exports.deleteCardById = (req, res, next) => {
       return card.remove();
     })
     .then((deleted) => res.send({ data: deleted }))
-    .catch((err) => next(err));
+    .catch((err) => {
+      if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
+        throw incorrectDataErr;
+      }
+    })
+    .catch(next);
 };
 
 module.exports.findCards = (req, res, next) => {
@@ -43,7 +56,12 @@ module.exports.likeCard = (req, res, next) => {
       if (!card) { throw notFoundErr; }
       return res.send({ data: card });
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
+        throw incorrectDataErr;
+      }
+    })
+    .catch(next);
 };
 
 module.exports.dislikeCard = (req, res, next) => {
@@ -56,5 +74,10 @@ module.exports.dislikeCard = (req, res, next) => {
       if (!card) { throw notFoundErr; }
       return res.send({ data: card });
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
+        throw incorrectDataErr;
+      }
+    })
+    .catch(next);
 };

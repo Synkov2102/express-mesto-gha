@@ -5,8 +5,14 @@ const User = require('../models/users');
 const userErr = new Error('Неправильная почта или пароль');
 userErr.statusCode = 401;
 
+const incorrectDataErr = new Error('Переданы некорректные данные');
+incorrectDataErr.statusCode = 400;
+
 const notFoundErr = new Error('Пользователь не найден');
 notFoundErr.statusCode = 404;
+
+const sameEmailErr = new Error('Пользователь c такой почтой уже зарегистрирован');
+sameEmailErr.statusCode = 409;
 
 module.exports.createUser = (req, res, next) => {
   const {
@@ -16,8 +22,15 @@ module.exports.createUser = (req, res, next) => {
     .then((hash) => User.create({
       email, password: hash, name, about, avatar,
     }))
-    .then((user) => res.send({ data: user }))
-    .catch((err) => next(err));
+    .then(() => res.send({
+      data: {
+        name, about, avatar, email,
+      },
+    }))
+    .catch((err) => {
+      if (err.code === 11000) { throw sameEmailErr; }
+    })
+    .catch(next);
 };
 
 module.exports.findUserById = (req, res, next) => {
@@ -26,7 +39,12 @@ module.exports.findUserById = (req, res, next) => {
       if (!user) { throw notFoundErr; }
       return res.send({ data: user });
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
+        next(incorrectDataErr);
+      }
+    })
+    .catch(next);
 };
 
 module.exports.findUsers = (req, res, next) => {
@@ -41,7 +59,12 @@ module.exports.findCurrentUser = (req, res, next) => {
       if (!user) { throw notFoundErr; }
       return res.send({ data: user });
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
+        next(incorrectDataErr);
+      }
+    })
+    .catch(next);
 };
 
 module.exports.patchUser = (req, res, next) => {
@@ -52,7 +75,12 @@ module.exports.patchUser = (req, res, next) => {
       if (!user) { throw notFoundErr; }
       return res.send({ data: user });
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
+        next(incorrectDataErr);
+      }
+    })
+    .catch(next);
 };
 
 module.exports.patchUserAvatar = (req, res, next) => {
@@ -63,34 +91,44 @@ module.exports.patchUserAvatar = (req, res, next) => {
       if (!user) { throw notFoundErr; }
       return res.send({ data: user });
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
+        next(incorrectDataErr);
+      }
+    })
+    .catch(next);
 };
 
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
+  let token = '';
   User.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
         Promise.reject(userErr);
       }
-      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
-      bcrypt.compare(password, user.password)
-        .then((matched) => {
-          if (!matched) {
-            // хеши не совпали — отклоняем промис
-            return Promise.reject(userErr);
-          }
-
-          // аутентификация успешна
-          return res
-            .status(200)
-            .cookie('jwt', token, {
-              // token - наш JWT токен, который мы отправляем
-              maxAge: 3600000 * 24 * 7,
-              httpOnly: true,
-            })
-            .send({ message: 'ОК' });
-        });
+      token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      return bcrypt.compare(password, user.password);
     })
-    .catch((err) => next(err));
+    .then((matched) => {
+      if (!matched) {
+        // хеши не совпали — отклоняем промис
+        return Promise.reject(userErr);
+      }
+
+      // аутентификация успешна
+      return res
+        .status(200)
+        .cookie('jwt', token, {
+          maxAge: 3600000 * 24 * 7,
+          httpOnly: true,
+        })
+        .send({ message: 'ОК' });
+    })
+    .catch((err) => {
+      if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
+        next(incorrectDataErr);
+      }
+    })
+    .catch(next);
 };
