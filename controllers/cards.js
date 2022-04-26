@@ -16,10 +16,10 @@ module.exports.createCard = (req, res, next) => {
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
-        throw incorrectDataErr;
+        next(incorrectDataErr);
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
 
 module.exports.deleteCardById = (req, res, next) => {
@@ -34,10 +34,10 @@ module.exports.deleteCardById = (req, res, next) => {
     .then((deleted) => res.send({ data: deleted }))
     .catch((err) => {
       if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
-        throw incorrectDataErr;
+        next(incorrectDataErr);
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
 
 module.exports.findCards = (req, res, next) => {
@@ -58,10 +58,10 @@ module.exports.likeCard = (req, res, next) => {
     })
     .catch((err) => {
       if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
-        throw incorrectDataErr;
+        next(incorrectDataErr);
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
 
 module.exports.dislikeCard = (req, res, next) => {
@@ -76,8 +76,8 @@ module.exports.dislikeCard = (req, res, next) => {
     })
     .catch((err) => {
       if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
-        throw incorrectDataErr;
+        next(incorrectDataErr);
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
