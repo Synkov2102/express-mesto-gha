@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
-const { celebrate, Joi } = require('celebrate');
+const { celebrate, Joi, errors } = require('celebrate');
 
 const app = express();
 
@@ -35,6 +35,9 @@ app.post('/signup', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
     password: Joi.string().required().min(8),
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+    avatar: Joi.string().min(2).max(30),
   }),
 }), createUser);
 app.use(auth);
@@ -43,7 +46,7 @@ app.use('/', card);
 app.use('/', (req, res, next) => {
   next(pageNotFound);
 });
-
+app.use(errors());
 app.use((err, req, res, next) => {
   next();
   if (err.statusCode) {
@@ -51,7 +54,7 @@ app.use((err, req, res, next) => {
   } if (err.name === 'CastError') {
     return res.status(400).send({ message: 'Переданы некорректные данные' });
   } if (err.name === 'ValidationError') {
-    return res.status(400).send({ message: 'Переданы некорректные данные' });
+    return res.status(400).send({ message: 'Переданы некорректные данные2' });
   }
   const { statusCode = 500, message } = err;
   return res
@@ -59,7 +62,7 @@ app.use((err, req, res, next) => {
     .send({
       // проверяем статус и выставляем сообщение в зависимости от него
       message: statusCode === 500
-        ? 'На сервере произошла ошибка'
+        ? err.message
         : message,
     });
 });

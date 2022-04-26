@@ -30,13 +30,6 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
       required: true,
-      validate: {
-        validator(v) {
-          return /http[s]?:\/(?:\/[^/]+){1,}(?:\/[А-Яа-яёЁ\w ]+\.[a-z]{3,5}(?![/]|[\wА-Яа-яёЁ]))/.test(v);
-        },
-
-        message: (props) => `${props.value} is not a valid phone number!`,
-      },
       default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
     },
   },
@@ -44,5 +37,10 @@ const userSchema = new mongoose.Schema(
     versionKey: false,
   },
 );
+
+userSchema.path('avatar').validate((val) => {
+  const urlRegex = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
+  return urlRegex.test(val);
+}, 'Invalid URL.');
 
 module.exports = mongoose.model('user', userSchema);

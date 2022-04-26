@@ -5,9 +5,6 @@ const User = require('../models/users');
 const userErr = new Error('Неправильная почта или пароль');
 userErr.statusCode = 401;
 
-const invalidInputErr = new Error('Переданы неверные данные');
-userErr.statusCode = 400;
-
 const notFoundErr = new Error('Пользователь не найден');
 notFoundErr.statusCode = 404;
 
@@ -15,7 +12,6 @@ module.exports.createUser = (req, res, next) => {
   const {
     email, password, name, about, avatar,
   } = req.body;
-  if (!email.isEmail()) { throw invalidInputErr; }
   bcrypt.hash(password, 10)
     .then((hash) => User.create({
       email, password: hash, name, about, avatar,
@@ -72,7 +68,6 @@ module.exports.patchUserAvatar = (req, res, next) => {
 
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
-  if (!email.isEmail()) { throw invalidInputErr; }
   User.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
