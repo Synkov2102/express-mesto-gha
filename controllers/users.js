@@ -28,9 +28,9 @@ module.exports.createUser = (req, res, next) => {
       },
     }))
     .catch((err) => {
-      if (err.code === 11000) { throw sameEmailErr; }
-    })
-    .catch(next);
+      if (err.code === 11000) { next(sameEmailErr); }
+      next(err);
+    });
 };
 
 module.exports.findUserById = (req, res, next) => {
@@ -43,8 +43,8 @@ module.exports.findUserById = (req, res, next) => {
       if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
         next(incorrectDataErr);
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
 
 module.exports.findUsers = (req, res, next) => {
@@ -63,8 +63,8 @@ module.exports.findCurrentUser = (req, res, next) => {
       if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
         next(incorrectDataErr);
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
 
 module.exports.patchUser = (req, res, next) => {
@@ -79,8 +79,8 @@ module.exports.patchUser = (req, res, next) => {
       if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
         next(incorrectDataErr);
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
 
 module.exports.patchUserAvatar = (req, res, next) => {
@@ -95,8 +95,8 @@ module.exports.patchUserAvatar = (req, res, next) => {
       if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
         next(incorrectDataErr);
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
 
 module.exports.login = (req, res, next) => {
@@ -105,7 +105,7 @@ module.exports.login = (req, res, next) => {
   User.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        Promise.reject(userErr);
+        throw userErr;
       }
       token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
       return bcrypt.compare(password, user.password);
@@ -113,7 +113,7 @@ module.exports.login = (req, res, next) => {
     .then((matched) => {
       if (!matched) {
         // хеши не совпали — отклоняем промис
-        return Promise.reject(userErr);
+        throw userErr;
       }
 
       // аутентификация успешна
@@ -129,6 +129,6 @@ module.exports.login = (req, res, next) => {
       if ((err.name === 'CastError') || (err.name === 'ValidationError')) {
         next(incorrectDataErr);
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
